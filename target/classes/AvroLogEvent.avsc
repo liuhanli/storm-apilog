@@ -1,0 +1,16 @@
+{
+	"type": "record",
+	"name": "AvroLog",
+	"namespace": "cn.iot.log.api.kafka",
+	"fields": [{
+		"name": "headers",
+		"type": {
+			"type": "map",
+			"values": "string"
+		}
+	},
+	{
+		"name": "body",
+		"type": "bytes"
+	}]
+}
