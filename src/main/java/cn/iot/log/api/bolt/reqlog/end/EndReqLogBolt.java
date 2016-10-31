@@ -1,4 +1,4 @@
-package cn.iot.log.api.bolt.translog;
+package cn.iot.log.api.bolt.reqlog.end;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -16,11 +16,8 @@ import cn.iot.log.api.bolt.AbstractLogBolt;
 import cn.iot.log.api.common.Constants;
 import cn.iot.log.api.kafka.LogEvent;
 
-/**
- * The Class TransLogBolt.
- */
-public class TransLogBolt extends AbstractLogBolt {
-	private static final Logger logger = LoggerFactory.getLogger(TransLogBolt.class);
+public class EndReqLogBolt extends AbstractLogBolt {
+	private static final Logger logger = LoggerFactory.getLogger(EndReqLogBolt.class);
 
 	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = 1L;
@@ -32,20 +29,20 @@ public class TransLogBolt extends AbstractLogBolt {
 			logger.debug("input Tuple is not a LogEvent instance");
 		} else {
 			LogEvent logEvent = (LogEvent) obj;
-			TransLogEvent transLogEvent = null;
+			EndReqLogEvent endReqLogEvent = null;
 			try {
-				transLogEvent = parseLog(logEvent);
+				endReqLogEvent = parseLog(logEvent);
 			} catch (Exception e) {
-				logger.error("parse LogEvent to TransLogEvent exception", e);
+				logger.error("parse LogEvent to endReqLogEvent exception", e);
 			}
-			if (transLogEvent != null) {
-				collector.emit(new Values(transLogEvent.getHost(), transLogEvent.getModule(),
-						transLogEvent.getDay(), transLogEvent));
+			if (endReqLogEvent != null) {
+				collector.emit(new Values(endReqLogEvent.getHost(), endReqLogEvent.getTransid(),
+						endReqLogEvent));
 			}
 		}
 	}
 
-	private TransLogEvent parseLog(LogEvent logEvent) throws Exception {
+	private EndReqLogEvent parseLog(LogEvent logEvent) throws Exception {
 		if (logEvent == null || isEmpty(logEvent.getBody())) {
 			throw new IllegalArgumentException("input LogEvent is null");
 		}
@@ -54,14 +51,14 @@ public class TransLogBolt extends AbstractLogBolt {
 		if (isMatch) {
 			Map<String, Object> dataMap = new HashMap<String, Object>();
 			String day = matcher.group(Constants.DAY);
+			String transid = matcher.group(Constants.TRANSID);
 			for (String key : getKeys()) {
 				String value = matcher.group(key);
 				dataMap.put(key, value);
 			}
-			dataMap.put(Constants.BODY, logEvent.getBody());
-			TransLogEvent transLogEvent = new TransLogEvent(logEvent.getHost(),
-					logEvent.getModule(), day, dataMap);
-			return transLogEvent;
+			EndReqLogEvent endReqLogEvent = new EndReqLogEvent(logEvent.getHost(),
+					logEvent.getModule(), day, dataMap, transid);
+			return endReqLogEvent;
 		} else {
 			return null;
 		}

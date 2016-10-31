@@ -8,7 +8,6 @@ import org.apache.storm.tuple.Tuple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import cn.iot.log.api.bolt.translog.TransLogEvent;
 import cn.iot.log.api.common.Constants;
 
 public class PrintLogBolt extends BaseBasicBolt {
@@ -20,19 +19,15 @@ public class PrintLogBolt extends BaseBasicBolt {
 
 	@Override
 	public void execute(Tuple input, BasicOutputCollector collector) {
-		Object obj = input.getValue(0);
+		Object obj = input.getValueByField(Constants.TRANSLOG);
 		if (obj != null) {
-			if (obj instanceof TransLogEvent) {
-				TransLogEvent event = (TransLogEvent) obj;
-				logger.info("host:{},module:{},boltTime:{},body:{}", event.getHost(),
-						event.getModule(), event.getBoltTime(), event.getMap().get(Constants.BODY));
-			}
+			logger.info("print log:{}", obj.toString());
 		}
 	}
 
 	@Override
 	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields("out"));
+		declarer.declare(new Fields("print"));
 	}
 
 }

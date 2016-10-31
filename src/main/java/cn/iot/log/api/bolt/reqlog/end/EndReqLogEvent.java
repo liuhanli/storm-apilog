@@ -1,4 +1,4 @@
-package cn.iot.log.api.bolt.translog;
+package cn.iot.log.api.bolt.reqlog.end;
 
 import java.io.Serializable;
 import java.util.Map;
@@ -6,9 +6,9 @@ import java.util.Map;
 import cn.iot.log.api.bolt.AbstractBoltLogEvent;
 
 /**
- * 业务流水日志.
+ * The Class EndReqLogEvent.
  */
-public class TransLogEvent extends AbstractBoltLogEvent implements Serializable {
+public class EndReqLogEvent extends AbstractBoltLogEvent implements Serializable {
 
 	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = 1L;
@@ -28,29 +28,37 @@ public class TransLogEvent extends AbstractBoltLogEvent implements Serializable 
 	/** The map. */
 	private Map<String, Object> map;
 
+	/** The transid. */
+	private String transid;
+
 	/**
-	 * Instantiates a new trans log event.
+	 * Instantiates a new end req log event.
 	 *
-	 * @param host
-	 *            the host
-	 * @param module
-	 *            the module
-	 * @param day
-	 *            the day
-	 * @param map
-	 *            the map
+	 * @param host the host
+	 * @param module the module
+	 * @param day the day
+	 * @param map the map
+	 * @param transid the transid
 	 */
-	public TransLogEvent(String host, String module, String day, Map<String, Object> map) {
+	public EndReqLogEvent(String host, String module, String day, Map<String, Object> map, String transid) {
 		this.host = host;
 		this.module = module;
 		this.day = day;
 		this.boltTime = System.currentTimeMillis();
 		this.map = map;
+		this.transid = transid;
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
+	/**
+	 * Gets the transid.
+	 *
+	 * @return the transid
+	 */
+	public String getTransid() {
+		return transid;
+	}
+
+	/* (non-Javadoc)
 	 * @see cn.iot.log.api.bolt.AbstractBoltLogEvent#getHost()
 	 */
 	@Override
@@ -96,23 +104,6 @@ public class TransLogEvent extends AbstractBoltLogEvent implements Serializable 
 	@Override
 	public Map<String, Object> getMap() {
 		return map;
-	}
-
-	@Override
-	public String toString() {
-		StringBuffer buffer = new StringBuffer();
-		buffer.append("host:" + getHost());
-		buffer.append(",module:" + getModule());
-		buffer.append(",day:" + getDay());
-		Map<String, Object> map = getMap();
-		if (map != null) {
-			for (Map.Entry<String, Object> entry : getMap().entrySet()) {
-				String key = entry.getKey();
-				Object value = entry.getValue();
-				buffer.append("," + key + ":" + value);
-			}
-		}
-		return buffer.toString();
 	}
 
 }

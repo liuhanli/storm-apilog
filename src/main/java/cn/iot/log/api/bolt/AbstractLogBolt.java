@@ -11,7 +11,6 @@ import org.apache.storm.topology.base.BaseBasicBolt;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-// TODO: Auto-generated Javadoc
 /**
  * The Class AbstractLogBolt.
  */
@@ -29,10 +28,26 @@ public abstract class AbstractLogBolt extends BaseBasicBolt {
 	/** The local keys. */
 	private ThreadLocal<List<String>> localKeys;
 
+	/** The regex. */
+	private String regex;
+
+	/** The out put field name. */
+	private String[] outPutFieldNames;
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.storm.topology.base.BaseBasicBolt#prepare(java.util.Map,
+	 * org.apache.storm.task.TopologyContext)
+	 */
 	@Override
 	public void prepare(Map stormConf, TopologyContext context) {
 		localMatcher = new ThreadLocal<>();
 		localKeys = new ThreadLocal<>();
+		if (!isEmpty(regex)) {
+			List<String> keyList = extractKeyList(regex);
+			localKeys.set(keyList);
+		}
 	}
 
 	/**
@@ -75,13 +90,6 @@ public abstract class AbstractLogBolt extends BaseBasicBolt {
 	}
 
 	/**
-	 * Gets the regex.
-	 *
-	 * @return the regex
-	 */
-	public abstract String getRegex();
-
-	/**
 	 * Gets the matcher.
 	 *
 	 * @return the matcher
@@ -109,5 +117,42 @@ public abstract class AbstractLogBolt extends BaseBasicBolt {
 		} else {
 			return false;
 		}
+	}
+
+	/**
+	 * Gets the regex.
+	 *
+	 * @return the regex
+	 */
+	public String getRegex() {
+		return regex;
+	}
+
+	/**
+	 * Sets the regex.
+	 *
+	 * @param regex
+	 *            the new regex
+	 */
+	public void setRegex(String regex) {
+		this.regex = regex;
+	}
+
+	/**
+	 * Gets the out put field names.
+	 *
+	 * @return the out put field names
+	 */
+	public String[] getOutPutFieldNames() {
+		return outPutFieldNames;
+	}
+
+	/**
+	 * Sets the out put field names.
+	 *
+	 * @param outPutFieldNames the new out put field names
+	 */
+	public void setOutPutFieldNames(String... outPutFieldNames) {
+		this.outPutFieldNames = outPutFieldNames;
 	}
 }
