@@ -40,7 +40,7 @@ public class TransLogBolt extends AbstractLogBolt {
 			}
 			if (transLogEvent != null) {
 				collector.emit(new Values(transLogEvent.getHost(), transLogEvent.getModule(),
-						transLogEvent.getDay(), transLogEvent));
+						transLogEvent.getDay(), transLogEvent.getTransid(), transLogEvent));
 			}
 		}
 	}
@@ -54,13 +54,14 @@ public class TransLogBolt extends AbstractLogBolt {
 		if (isMatch) {
 			Map<String, Object> dataMap = new HashMap<String, Object>();
 			String day = matcher.group(Constants.DAY);
+			String transid = matcher.group(Constants.TRANSID);
 			for (String key : getKeys()) {
 				String value = matcher.group(key);
 				dataMap.put(key, value);
 			}
 			dataMap.put(Constants.BODY, logEvent.getBody());
 			TransLogEvent transLogEvent = new TransLogEvent(logEvent.getHost(),
-					logEvent.getModule(), day, dataMap);
+					logEvent.getModule(), day, transid, dataMap);
 			return transLogEvent;
 		} else {
 			return null;

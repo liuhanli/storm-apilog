@@ -59,11 +59,11 @@
 		</dependency>
 		<!-- <dependency> <groupId>org.apache.storm</groupId> <artifactId>storm-elasticsearch</artifactId> 
 			<version>1.0.2</version> </dependency> -->
-		<dependency>
+		<!-- <dependency>
 			<groupId>com.github.fhuss</groupId>
 			<artifactId>storm-elasticsearch</artifactId>
 			<version>0.3.0</version>
-		</dependency>
+		</dependency> -->
 		<dependency>
 			<groupId>org.apache.kafka</groupId>
 			<artifactId>kafka_2.11</artifactId>
@@ -95,6 +95,11 @@
 			<artifactId>avro</artifactId>
 			<version>1.8.1</version>
 		</dependency>
+		<dependency>
+			<groupId>com.google.guava</groupId>
+			<artifactId>guava</artifactId>
+			<version>19.0</version>
+		</dependency>
 	</dependencies>
 	<build>
 
@@ -114,7 +119,7 @@
 					</execution>
 				</executions>
 			</plugin>
-			
+
 			<!-- compile插件 -->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>

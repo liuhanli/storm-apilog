@@ -13,4 +13,7 @@ public class Constants {
 	public static final String ENDREQLOG = "endreqlog";
 	public static final String REQLOG = "reqlog";
 	public static final String PRINTLOG = "printlog";
+	public static final String ESLOG = "eslog";
+	public static final String INDEXBATCH = "indexbatch";
+	public static final String BOLTTIME = "bolttime";
 }

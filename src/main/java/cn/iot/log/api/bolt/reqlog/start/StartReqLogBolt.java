@@ -16,57 +16,81 @@ import cn.iot.log.api.bolt.AbstractLogBolt;
 import cn.iot.log.api.common.Constants;
 import cn.iot.log.api.kafka.LogEvent;
 
+/**
+ * The Class StartReqLogBolt.
+ */
 public class StartReqLogBolt extends AbstractLogBolt {
-	private static final Logger logger = LoggerFactory.getLogger(StartReqLogBolt.class);
 
-	/** The Constant serialVersionUID. */
-	private static final long serialVersionUID = 1L;
+    /** The Constant logger. */
+    private static final Logger logger = LoggerFactory.getLogger(StartReqLogBolt.class);
 
-	@Override
-	public void execute(Tuple input, BasicOutputCollector collector) {
-		Object obj = input.getValue(0);
-		if (!(obj instanceof LogEvent)) {
-			logger.debug("input Tuple is not a LogEvent instance");
-		} else {
-			LogEvent logEvent = (LogEvent) obj;
-			StartReqLogEvent startReqLogEvent = null;
-			try {
-				startReqLogEvent = parseLog(logEvent);
-			} catch (Exception e) {
-				logger.error("parse LogEvent to startReqLogEvent exception", e);
-			}
-			if (startReqLogEvent != null) {
-				collector.emit(new Values(startReqLogEvent.getHost(), startReqLogEvent.getTransid(),
-						startReqLogEvent));
-			}
-		}
-	}
+    /** The Constant serialVersionUID. */
+    private static final long serialVersionUID = 1L;
 
-	private StartReqLogEvent parseLog(LogEvent logEvent) throws Exception {
-		if (logEvent == null || isEmpty(logEvent.getBody())) {
-			throw new IllegalArgumentException("input LogEvent is null");
-		}
-		Matcher matcher = getMatcher();
-		boolean isMatch = matcher.reset(logEvent.getBody()).matches();
-		if (isMatch) {
-			Map<String, Object> dataMap = new HashMap<String, Object>();
-			String day = matcher.group(Constants.DAY);
-			String transid = matcher.group(Constants.TRANSID);
-			for (String key : getKeys()) {
-				String value = matcher.group(key);
-				dataMap.put(key, value);
-			}
-			StartReqLogEvent startReqLogEvent = new StartReqLogEvent(logEvent.getHost(),
-					logEvent.getModule(), day, dataMap, transid);
-			return startReqLogEvent;
-		} else {
-			return null;
-		}
-	}
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.apache.storm.topology.IBasicBolt#execute(org.apache.storm.tuple.Tuple,
+     * org.apache.storm.topology.BasicOutputCollector)
+     */
+    @Override
+    public void execute(Tuple input, BasicOutputCollector collector) {
+        Object obj = input.getValue(0);
+        if (!(obj instanceof LogEvent)) {
+            logger.debug("input Tuple is not a LogEvent instance");
+        } else {
+            LogEvent logEvent = (LogEvent) obj;
+            StartReqLogEvent startReqLogEvent = null;
+            try {
+                startReqLogEvent = parseLog(logEvent);
+            } catch (Exception e) {
+                logger.error("parse LogEvent to startReqLogEvent exception", e);
+            }
+            if (startReqLogEvent != null) {
+                collector.emit(new Values(startReqLogEvent.getHost(), startReqLogEvent.getTransid(),
+                        startReqLogEvent));
+            }
+        }
+    }
 
-	@Override
-	public void declareOutputFields(OutputFieldsDeclarer declarer) {
-		declarer.declare(new Fields(getOutPutFieldNames()));
-	}
+    /**
+     * Parses the log.
+     *
+     * @param logEvent the log event
+     * @return the start req log event
+     * @throws Exception the exception
+     */
+    private StartReqLogEvent parseLog(LogEvent logEvent) throws Exception {
+        if (logEvent == null || isEmpty(logEvent.getBody())) {
+            throw new IllegalArgumentException("input LogEvent is null");
+        }
+        Matcher matcher = getMatcher();
+        boolean isMatch = matcher.reset(logEvent.getBody()).matches();
+        if (isMatch) {
+            Map<String, Object> dataMap = new HashMap<String, Object>();
+            String day = matcher.group(Constants.DAY);
+            String transid = matcher.group(Constants.TRANSID);
+            for (String key : getKeys()) {
+                String value = matcher.group(key);
+                dataMap.put(key, value);
+            }
+            StartReqLogEvent startReqLogEvent = new StartReqLogEvent(logEvent.getHost(),
+                    logEvent.getModule(), day, dataMap, transid);
+            return startReqLogEvent;
+        } else {
+            return null;
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.apache.storm.topology.IComponent#declareOutputFields(org.apache.storm.topology.
+     * OutputFieldsDeclarer)
+     */
+    @Override
+    public void declareOutputFields(OutputFieldsDeclarer declarer) {
+        declarer.declare(new Fields(getOutPutFieldNames()));
+    }
 
 }

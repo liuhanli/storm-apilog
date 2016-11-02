@@ -2,6 +2,7 @@ package cn.iot.log.api.bolt.reqlog;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.storm.task.TopologyContext;
 import org.apache.storm.topology.BasicOutputCollector;
@@ -13,10 +14,14 @@ import org.apache.storm.utils.RotatingMap;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+
 import cn.iot.log.api.bolt.AbstractBoltLogEvent;
 import cn.iot.log.api.bolt.AbstractLogBolt;
 import cn.iot.log.api.bolt.reqlog.end.EndReqLogEvent;
 import cn.iot.log.api.bolt.reqlog.start.StartReqLogEvent;
+import cn.iot.log.api.common.Constants;
 
 /**
  * The Class ReqLogBolt.
@@ -29,12 +34,18 @@ public class ReqLogBolt extends AbstractLogBolt {
 	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = 1L;
 
-	/** The log map. */
-	private RotatingMap<String, AbstractBoltLogEvent> logMap;
+	/** The start cache. */
+	private static Cache<String, StartReqLogEvent> startCache;
+
+	/** The end cache. */
+	private static Cache<String, EndReqLogEvent> endCache;
 
 	@Override
 	public void prepare(Map stormConf, TopologyContext context) {
-		logMap = new RotatingMap<>(100000, new ExpireCallback());
+		startCache = CacheBuilder.newBuilder().maximumSize(100000)
+				.expireAfterWrite(600, TimeUnit.SECONDS).build();
+		endCache = CacheBuilder.newBuilder().maximumSize(100000)
+				.expireAfterWrite(600, TimeUnit.SECONDS).build();
 	}
 
 	/**
@@ -47,6 +58,8 @@ public class ReqLogBolt extends AbstractLogBolt {
 	 */
 	@Override
 	public void execute(Tuple input, BasicOutputCollector collector) {
+//		logger.info("SourceComponent:{},SourceStreamId():{}", input.getSourceComponent(),
+//				input.getSourceStreamId());
 		Object obj = input.getValue(2);
 		if (obj instanceof StartReqLogEvent) {
 			handlerStartReqLog((StartReqLogEvent) obj, collector);
@@ -66,19 +79,20 @@ public class ReqLogBolt extends AbstractLogBolt {
 	 *            the collector
 	 */
 	private void handlerStartReqLog(StartReqLogEvent event, BasicOutputCollector collector) {
-		Object obj = logMap.get(event.getTransid());
-		if (obj == null) {
-			logMap.put(event.getTransid(), event);
-			return;
-		}
-		if (obj instanceof EndReqLogEvent) {
-			logMap.remove(event.getTransid());
-			EndReqLogEvent endLog = (EndReqLogEvent) obj;
-			createReqLog(event, endLog, collector);
-		} else if (obj instanceof StartReqLogEvent) {
-			logger.warn("already exists StartReqLogEvent,transid:{}",((StartReqLogEvent)obj).getTransid());
+		String cacheId = event.getTransid();
+		startCache.put(cacheId, event);
+		EndReqLogEvent endEvent = endCache.getIfPresent(cacheId);
+		if (endEvent == null) {
+			logger.debug("handleStartReqLog endEvent=null cacheId:{}", cacheId);
 		} else {
-			logger.warn("unkown log type");
+			if (endEvent instanceof EndReqLogEvent) {
+				startCache.invalidate(cacheId);
+				endCache.invalidate(cacheId);
+				logger.debug("handleStartReqLog createAndSendToSinkHandler");
+				createReqLog(event, endEvent, collector);
+			} else {
+				logger.warn("already exists StartReqLogEvent, transid:{}", cacheId);
+			}
 		}
 	}
 
@@ -91,19 +105,20 @@ public class ReqLogBolt extends AbstractLogBolt {
 	 *            the collector
 	 */
 	private void handlerEndReqLog(EndReqLogEvent event, BasicOutputCollector collector) {
-		Object obj = logMap.get(event.getTransid());
-		if (obj == null) {
-			logMap.put(event.getTransid(), event);
-			return;
-		}
-		if (obj instanceof EndReqLogEvent) {
-			logger.warn("already exists EndReqLogEvent,transid:{}",((EndReqLogEvent)obj).getTransid());
-		} else if (obj instanceof StartReqLogEvent) {
-			logMap.remove(event.getTransid());
-			StartReqLogEvent startLog = (StartReqLogEvent) obj;
-			createReqLog(startLog, event, collector);
+		String cacheId = event.getTransid();
+		StartReqLogEvent startEvent = startCache.getIfPresent(cacheId);
+		if (startEvent == null) {
+			logger.debug("handleEndReqLog startEvent=null cacheId:{}", cacheId);
+			endCache.put(cacheId, event);
 		} else {
-			logger.warn("unkown log type");
+			if (startEvent instanceof StartReqLogEvent) {
+				startCache.invalidate(cacheId);
+				endCache.invalidate(cacheId);
+				logger.debug("handleEndReqLog createAndSendToSinkHandler");
+				createReqLog(startEvent, event, collector);
+			} else {
+				logger.warn("already exists EndReqLogEvent, transid:{}", cacheId);
+			}
 		}
 	}
 
@@ -112,8 +127,10 @@ public class ReqLogBolt extends AbstractLogBolt {
 		Map<String, Object> map = new HashMap<>();
 		map.putAll(startLog.getMap());
 		map.putAll(endLog.getMap());
+		map.put(Constants.HOST, startLog.getHost());
+		map.put(Constants.BOLTTIME, System.currentTimeMillis());
 		String host = startLog.getHost();
-		String module = startLog.getModule();
+		String module = Constants.REQLOG;
 		String day = startLog.getDay();
 		String transid = startLog.getTransid();
 		ReqLogEvent event = new ReqLogEvent(host, module, day, map, transid);

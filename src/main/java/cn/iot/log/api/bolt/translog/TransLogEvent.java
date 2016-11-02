@@ -22,6 +22,8 @@ public class TransLogEvent extends AbstractBoltLogEvent implements Serializable 
 	/** The day. */
 	private String day;
 
+	private String transid;
+
 	/** The bolt time. */
 	private long boltTime;
 
@@ -40,12 +42,18 @@ public class TransLogEvent extends AbstractBoltLogEvent implements Serializable 
 	 * @param map
 	 *            the map
 	 */
-	public TransLogEvent(String host, String module, String day, Map<String, Object> map) {
+	public TransLogEvent(String host, String module, String day, String transid,
+			Map<String, Object> map) {
 		this.host = host;
 		this.module = module;
 		this.day = day;
+		this.transid = transid;
 		this.boltTime = System.currentTimeMillis();
 		this.map = map;
+	}
+
+	public String getTransid() {
+		return transid;
 	}
 
 	/*
