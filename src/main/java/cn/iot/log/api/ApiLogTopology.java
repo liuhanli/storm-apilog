@@ -36,16 +36,17 @@ public class ApiLogTopology {
 
     public static void main(String[] args) throws Exception {
         ApiLogTopology toplogy = new ApiLogTopology();
-        toplogy.startLocalCluster();
+        //toplogy.startLocalCluster();
+        toplogy.startCluster();
     }
 
     private void startLocalCluster() throws Exception {
         Config config = new Config();
         config.put("storm.elasticsearch.cluster.name", "LOG-CLUSTER");
-        config.put("storm.elasticsearch.hosts", "192.168.156.50:9300,192.168.156.51:9300");
+        config.put("storm.elasticsearch.hosts", "192.168.156.51:9300,192.168.156.52:9300");
         LocalCluster cluster = new LocalCluster();
         StormTopology topology = createTopology();
-        cluster.submitTopology("storm-log", config, topology);
+        cluster.submitTopology("storm-apilog", config, topology);
         Thread.sleep(66660000);
         cluster.shutdown();
     }
@@ -53,17 +54,17 @@ public class ApiLogTopology {
     private void startCluster() throws Exception {
         logger.info("Begin to start cluster topology.......");
         Config config = new Config();
-        config.put(Config.NIMBUS_SEEDS, parseNimbus("192.168.156.60"));
+        config.put(Config.NIMBUS_SEEDS, parseNimbus("192.168.156.55"));
         config.put(Config.NIMBUS_THRIFT_PORT, Integer.parseInt("6627"));
         config.put(Config.STORM_ZOOKEEPER_PORT, parseZkPort("192.168.156.58:2181,192.168.156.60:2181"));
         config.put(Config.STORM_ZOOKEEPER_SERVERS, parseZkHosts("192.168.156.58:2181,192.168.156.60:2181"));
 
         config.put("storm.elasticsearch.cluster.name", "LOG-CLUSTER");
-        config.put("storm.elasticsearch.hosts", "192.168.156.58:9300,192.168.156.60:9300");
-        config.setNumWorkers(10);
+        config.put("storm.elasticsearch.hosts", "192.168.156.51:9300,192.168.156.54:9300");
+        config.setNumWorkers(4);
         config.setMaxSpoutPending(5000);
         StormTopology topology = createTopology();
-        StormSubmitter.submitTopology("storm-log", config, topology);
+        StormSubmitter.submitTopology("storm-apilog", config, topology);
         logger.info("Finish start cluster topology");
     }
 
@@ -107,19 +108,19 @@ public class ApiLogTopology {
         StartReqLogBolt startReqLogBolt = createStartReqLogBolt();
         EndReqLogBolt endReqLogBolt = createEndReqLogBolt();
         ReqLogBolt reqLogBolt = createReqLogBolt();
-        PrintLogBolt printLogBolt = createPrintLogBolt();
+        // PrintLogBolt printLogBolt = createPrintLogBolt();
         builder.setBolt(Constants.STARTREQLOG, startReqLogBolt, 10).shuffleGrouping(Constants.KAFKASPOUT);
         builder.setBolt(Constants.ENDREQLOG, endReqLogBolt, 10).shuffleGrouping(Constants.KAFKASPOUT);
         builder.setBolt(Constants.REQLOG, reqLogBolt, 10)
                 .fieldsGrouping(Constants.STARTREQLOG, new Fields(Constants.HOST, Constants.TRANSID))
                 .fieldsGrouping(Constants.ENDREQLOG, new Fields(Constants.HOST, Constants.TRANSID));
-//        builder.setBolt(Constants.PRINTLOG + 2, printLogBolt, 4).fieldsGrouping(Constants.REQLOG,
-//                new Fields(Constants.HOST));
+        // builder.setBolt(Constants.PRINTLOG + 2, printLogBolt, 4).fieldsGrouping(Constants.REQLOG,
+        // new Fields(Constants.HOST));
 
         // 添加ES入库Bolt
         IndexBatchBolt<Map<String, Object>> indexBatchBolt = createIndexBatchBolt();
         builder.setBolt(Constants.INDEXBATCH, indexBatchBolt, 4).shuffleGrouping(Constants.REQLOG);
-        
+
         StormTopology topology = builder.createTopology();
         return topology;
     }
@@ -161,8 +162,8 @@ public class ApiLogTopology {
     }
 
     private KafkaSpout createKafkaSpout() {
-        ZkHosts hosts = new ZkHosts("192.168.156.60:2181", "/kafka/brokers");
-        SpoutConfig spoutConfig = new SpoutConfig(hosts, "apiserver_log_dev", "/storm-log", "1365055");
+        ZkHosts hosts = new ZkHosts("192.168.156.60:2181","/kafka/brokers");
+        SpoutConfig spoutConfig = new SpoutConfig(hosts, "apiserver_log_dev", "/kafka/consumers", "storm-apilog-consumer");
         spoutConfig.scheme = new SchemeAsMultiScheme(new AvroLogScheme());
         spoutConfig.startOffsetTime = kafka.api.OffsetRequest.EarliestTime();
         return new KafkaSpout(spoutConfig);
@@ -174,6 +175,7 @@ public class ApiLogTopology {
         IndexBatchBolt bolt = new IndexBatchBolt<>(5, TimeUnit.SECONDS);
         bolt.setClientFactory(clientFactory);
         bolt.setMapper(mapper);
+        bolt.setBatchSize(1000);
         return bolt;
     }
 

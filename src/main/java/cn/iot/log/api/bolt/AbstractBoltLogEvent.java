@@ -1,13 +1,19 @@
 package cn.iot.log.api.bolt;
 
+import java.io.Serializable;
 import java.util.Map;
 
 /**
  * The Class AbstractBoltLogEvent.
  */
-public abstract class AbstractBoltLogEvent {
+public abstract class AbstractBoltLogEvent implements Serializable{
 	
 	/**
+     * 
+     */
+    private static final long serialVersionUID = 1L;
+
+    /**
 	 * Gets the host.
 	 *
 	 * @return the host

@@ -1,11 +1,10 @@
 package cn.iot.log.api.bolt.reqlog.start;
 
-import java.io.Serializable;
 import java.util.Map;
 
 import cn.iot.log.api.bolt.AbstractBoltLogEvent;
 
-public class StartReqLogEvent extends AbstractBoltLogEvent implements Serializable {
+public class StartReqLogEvent extends AbstractBoltLogEvent {
 	/** The Constant serialVersionUID. */
 	private static final long serialVersionUID = 1L;
 
